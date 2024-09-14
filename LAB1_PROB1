@@ -1,0 +1,125 @@
+    PROCESSOR 18F57Q43
+    #include <xc.inc>          
+    #include <pic18f57q43.inc>  
+    #include "cabzon.inc"
+    
+    PSECT code, reloc=2, abs  
+    
+    varA    equ     500H       
+    varB    equ     501H       
+    MAXIMO  equ     502H       
+    suma    equ     503H       
+    var1    equ     504H      
+    var2    equ     505H      
+    var3    equ     506H
+    estado  equ     507H
+    
+    ORG	    000000H
+    goto    configuro     
+   
+    ORG	    000020H            
+   
+configuro:
+    movlw   60H                
+    movwf   OSCCON1,b          
+    movlw   05H                
+    movwf   OSCFRQ,b           
+    movlw   40H                
+    movwf   OSCEN,b            
+
+    bcf     TRISA,0,b        
+    bsf     TRISD,3,b
+    bsf     TRISD,2,b
+    bsf     TRISB,3,b
+    
+    clrf    varA,b             
+    clrf    varB,b             
+    clrf    estado,b           
+    
+    movlw   0AH              
+    movwf   MAXIMO,b
+
+inicio:
+    btfss   PORTD,3,b           
+    goto    PULSADOR_B           
+    incf    varA,f,b            
+    call    retardo           
+    btfss   varA,4,b            
+    goto    PULSADOR_A         
+    movlw   10
+    movwf   varA,b             
+
+PULSADOR_B:
+    btfss   PORTD,2,b           
+    goto    PULSADOR_ENTER       
+    incf    varB,f,b            
+    call    retardo           
+    btfss   varB,4,b            
+    goto    PULSADOR_ENTER
+    movlw   10
+    movwf   varB,b   
+    goto inicio
+    
+PULSADOR_A:
+    btfss   PORTD,3,b
+    goto    PULSADOR_ENTER
+    incf    varA,f,b
+    call    retardo
+    btfss   varA,4,b
+    goto    PULSADOR_ENTER
+    movlw   10	
+    movwf   varA,b
+    goto inicio
+    
+PULSADOR_ENTER:
+    btfss   PORTB,3,b           
+    goto    inicio              
+    
+    movf    varA,w,b            
+    addwf   varB,w,b            
+    movwf   suma,b              
+
+    movf    suma,w,b            
+    cpfsgt  MAXIMO,b            
+    goto    actualizar_led      
+    
+    bcf     estado,0,b          
+    goto    actualizar_led
+
+actualizar_led:
+    movf    estado,w,b          
+    btfsc   estado,0,b          
+    goto    encender_led        
+    bcf     LATA,0,b            
+    goto    REINICIO
+
+encender_led:
+    bsf     LATA,0,b            
+
+REINICIO:
+    clrf    varA,b              
+    clrf    varB,b              
+    goto    inicio            
+
+retardo:
+    movlw   100			
+    movwf   var1,b		
+
+xxx:
+    movlw   250			
+    movwf   var2,b		
+
+yyy:
+    movlw   5			
+    movwf   var3,b		
+
+zzz:
+    decfsz  var3,b		
+    goto    zzz			
+    decfsz  var2,b		
+    goto    yyy			
+    decfsz  var1,b		
+    goto    xxx			
+    return
+
+end
