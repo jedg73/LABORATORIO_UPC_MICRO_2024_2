@@ -1,0 +1,63 @@
+    PROCESSOR 18F57Q43
+    #include <xc.inc>
+    #include <pic18f57q43.inc>
+    #include "cabzon.inc"
+    
+    PSECT code, reloc=2,abs
+ 
+ valor equ  00H	;direccion 500H bank 5
+ 
+ ORG 000000H
+ goto configuro
+ 
+ ORG 0000020H
+ 
+configuro:
+    
+    movlb   00H
+    movlw   60H
+    movwf   OSCCON1,b
+    movlw   02H
+    movwf   OSCFRQ,b
+    movlw   40H
+    movwf   OSCEN,b
+    movlb   04H
+    movlw   00001111B
+    movwf   TRISF,b
+    clrf    ANSELF,b
+    movlw   00000000B
+    movwf   TRISD,b
+    clrf    ANSELD,b
+    clrf    LATD,b
+    
+inicio:
+    movf    PORTF,w,b
+    andlw   0FH
+    movlb   05H
+    movwf   valor,b
+    addwf   valor,w,b
+    call    tabla   
+    movwf   LATD,b
+    goto inicio
+ 
+tabla:
+    movlb   04H
+    addwf   PCL,f,b
+    retlw   3FH
+    retlw   06H
+    retlw   5BH
+    retlw   4FH
+    retlw   66H
+    retlw   6DH
+    retlw   7DH
+    retlw   07H
+    retlw   7FH
+    retlw   67H
+    retlw   00H
+    retlw   00H
+    retlw   00H
+    retlw   00H
+    retlw   00H
+    retlw   00H
+    
+    end
