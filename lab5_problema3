@@ -1,0 +1,102 @@
+    PROCESSOR 18F57Q43
+    #include <xc.inc>
+    #include <pic18f57q43.inc>
+    #include "cabzon.inc"
+    
+    PSECT code, reloc=2,abs
+ 
+ valor equ  00H	;direccion 500H bank 5
+ var1 equ  01H
+ var2 equ  02H 
+ var3 equ  03H 
+ 
+ ORG 000000H
+ goto configuro
+ 
+ ORG 0000020H
+ 
+configuro:
+    
+    movlb   00H
+    movlw   60H
+    movwf   OSCCON1,b
+    movlw   02H
+    movwf   OSCFRQ,b
+    movlw   40H
+    movwf   OSCEN,b
+    movlb   04H
+    bsf	    TRISF,3,b
+    bcf	    ANSELF,3,b
+    bsf	    WPUF,3,b
+    movlw   00000000B
+    movwf   TRISD,b
+    clrf    ANSELD,b
+    movlw   3FH
+    movwf   LATD,b
+    movlb   05H
+    clrf    valor,b
+    movlb   04H
+    
+ inicio:
+    btfsc   PORTF,3,b
+    goto    inicio
+    btfss   PORTF,3,b
+    goto $-1
+  
+cuenta_up:
+    movlb   05H
+    incf    valor,f,b
+    movlw   10
+    cpfseq  valor
+    goto    sigue
+    clrf    valor,b
+    
+sigue:
+    movf    valor,w
+    addwf   valor,w,b
+    call    tabla
+    movwf   LATD,b
+    movlb   05H
+    call    retardo
+    goto    cuenta_up
+    
+tabla:
+    movlb   04H
+    addwf   PCL,f,b
+    retlw   3FH
+    retlw   06H
+    retlw   5BH
+    retlw   4FH
+    retlw   66H
+    retlw   6DH
+    retlw   7DH
+    retlw   07H
+    retlw   7FH
+    retlw   67H
+    retlw   00H
+    retlw   00H
+    retlw   00H
+    retlw   00H
+    retlw   00H
+    retlw   00H
+
+retardo:
+    movlw   100
+    movwf   var1,b
+    
+xxx:
+    movlw   250
+    movwf   var2,b
+yyy:
+    movlw   5
+    movwf   var3,b
+zzz:
+    decfsz  var3,1,1
+    goto zzz
+    decfsz  var2,1,1
+    goto yyy
+    decfsz  var1,1,1
+    goto    zzz
+    return
+    
+ end
