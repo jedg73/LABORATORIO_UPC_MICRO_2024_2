@@ -1,7 +1,7 @@
 PROCESSOR 18F57Q43
     #include <xc.inc>
     #include <pic18f57q43.inc>
-    #include "cabecera.inc"
+    #include "cabzon.inc"
     
  #define _XTAL_FREQ 4000000UL
  var1 equ  00H
