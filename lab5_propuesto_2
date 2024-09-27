@@ -1,0 +1,171 @@
+PROCESSOR 18F57Q43
+    #include <xc.inc>
+    #include <pic18f57q43.inc>
+    #include "cabzon.inc"
+
+    #define _XTAL_FREQ 4000000UL
+
+var3    equ 500H
+var2    equ 501H
+
+uni     equ 0x02H
+dece    equ 0x03H
+cien    equ 0x04H
+millar  equ 0x05H
+cuenta  equ 0x06H
+
+PSECT code, reloc=2, abs
+
+ORG 00300H
+tabla: db 0x3FH, 0x06H, 0x5BH, 0x4FH, 0x66H, 0x6DH, 0x7DH, 0x7H, 0x7FH, 0x67H
+ORG 00000H
+
+goto configuro
+ORG 00020H
+configuro:
+movlb   00H
+movlw   60H
+movwf   OSCCON1,b
+movlw   02H
+movwf   OSCFRQ,b
+bsf     OSCEN,6,b
+movlb   04H
+
+clrf    TRISD,b
+clrf    ANSELD,b
+clrf    LATD,b
+clrf    TRISB,b
+clrf    ANSELB,b
+clrf    LATB,b
+bsf     TRISA,0,b     
+clrf    ANSELA,b      
+movlb   05H
+clrf    uni, 1
+clrf    dece, 1
+clrf    cien, 1
+clrf    millar, 1
+movlw   50
+movwf   cuenta, 1
+movlb   04H
+movlw   03H
+movwf   TBLPTRH,b
+
+loop:
+    btfss   PORTA,0   
+    call    incrementar
+    btfsc   PORTA,0   
+    call    decrementar
+
+    movlb   05H
+    goto    display
+
+incrementar:
+    movlb   05H
+    incf    uni,1,1
+    movlw   10
+    cpfseq  uni,b
+    goto    fin_incrementar
+    clrf    uni,b
+    incf    dece,1,1
+    movlw   10
+    cpfseq  dece,b
+    goto    fin_incrementar
+    clrf    dece,b
+    incf    cien,1,1
+    movlw   10
+    cpfseq  cien,b
+    goto    fin_incrementar
+    clrf    cien,b
+    incf    millar,1,1
+    movlw   10
+    cpfseq  millar,b
+    goto    fin_incrementar
+    clrf    millar,b
+fin_incrementar:
+    return
+
+decrementar:
+    movlb   05H
+    decf    uni,1,1
+    movlw   0FFH
+    cpfseq  uni,b
+    goto    fin_decrementar
+    movlw   9
+    movwf   uni,b
+    decf    dece,1,1
+    movlw   0FFH
+    cpfseq  dece,b
+    goto    fin_decrementar
+    movlw   9
+    movwf   dece,b
+    decf    cien,1,1
+    movlw   0FFH
+    cpfseq  cien,b
+    goto    fin_decrementar
+    movlw   9
+    movwf   cien,b
+    decf    millar,1,1
+    movlw   0FFH
+    cpfseq  millar,b
+    goto    fin_decrementar
+    movlw   9
+    movwf   millar,b
+fin_decrementar:
+    return
+
+display:
+    movlb   05H
+    movf    uni,0,1
+    movlb   04H
+    movwf   TBLPTRL,b
+    TBLRD*
+    movff   TABLAT,LATD
+    bsf     LATB,0,b
+    call    retardo
+    bcf     LATB,0,b
+
+    movlb   05H
+    movf    dece,0,1
+    movlb   04H
+    movwf   TBLPTRL,b
+    TBLRD*
+    movff   TABLAT,LATD
+    bsf     LATB,1,b
+    call    retardo
+    bcf     LATB,1,b
+
+    movlb   05H
+    movf    cien,0,1
+    movlb   04H
+    movwf   TBLPTRL,b
+    TBLRD*
+    movff   TABLAT,LATD
+    bsf     LATB,2,b
+    call    retardo
+    bcf     LATB,2,b
+
+    movlb   05H
+    movf    millar,0,1
+    movlb   04H
+    movwf   TBLPTRL,b
+    TBLRD*
+    movff   TABLAT,LATD
+    bsf     LATB,3,b
+    call    retardo
+    bcf     LATB,3,b
+    goto    loop
+    
+retardo:
+    movlw   5
+    movwf   var3, b
+
+xxx:
+    movlw   100
+    movwf   var2, b
+
+yyy:
+    decfsz  var2,1,1
+    goto    yyy
+    decfsz  var3,1,1
+    goto    xxx
+    return
