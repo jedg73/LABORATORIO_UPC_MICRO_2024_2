@@ -1,0 +1,190 @@
+PROCESSOR 18F57Q43
+    #include <xc.inc>
+    #include <pic18f57q43.inc>
+    #include "cabzon.inc"
+
+    #define _XTAL_FREQ 4000000UL
+
+var1    equ 00H
+var2    equ 01H
+var3    equ 500H
+var4    equ 501H
+
+small_unit   equ 0x02H
+small_ten    equ 0x03H
+large_unit   equ 0x04H
+large_ten    equ 0x05H
+conteo       equ 0x06H
+estado_anterior_pequena equ 0x07H
+estado_anterior_grande  equ 0x08H
+
+PSECT code, reloc=2, abs
+
+ORG 00300H
+tabla: db 0x3FH, 0x06H, 0x5BH, 0x4FH, 0x66H, 0x6DH, 0x7DH, 0x07H, 0x7FH, 0x67H
+ORG 00000H
+
+goto configuro
+ORG 00020H
+
+configuro:
+    movlb   00H
+    movlw   60H
+    movwf   OSCCON1,b
+    movlw   02H
+    movwf   OSCFRQ,b
+    bsf     OSCEN,6,b
+    movlb   04H
+
+    clrf    TRISD,b
+    clrf    ANSELD,b
+    clrf    LATD,b
+    clrf    TRISB,b
+    clrf    ANSELB,b
+    clrf    LATB,b
+    bsf     TRISA,0,b
+    bsf     TRISA,1,b
+    clrf    ANSELA,b
+    movlb   05H
+    clrf    small_unit,1
+    clrf    small_ten,1
+    clrf    large_unit,1
+    clrf    large_ten,1
+    movlw   50
+    movwf   conteo,1
+    clrf    estado_anterior_pequena,1
+    clrf    estado_anterior_grande,1
+    movlb   04H
+    movlw   03H
+    movwf   TBLPTRH,b
+
+loop:
+    movlb   05H
+    call    detectar_pequena
+    call    detectar_grande
+
+    movlb   05H
+    goto    display
+
+detectar_pequena:
+    btfsc   PORTA,0
+    goto    liberar_pequena
+    movf    estado_anterior_pequena, w
+    btfsc   STATUS,2
+    return
+    call    incrementar_pequena
+    clrf    estado_anterior_pequena
+    return
+
+liberar_pequena:
+    btfss   PORTA,0
+    return
+    movlw   1
+    movwf   estado_anterior_pequena
+    return
+
+detectar_grande:
+    btfsc   PORTA,1
+    goto    liberar_grande
+    movf    estado_anterior_grande, w
+    btfsc   STATUS,2
+    return
+    call    incrementar_grande
+    clrf    estado_anterior_grande
+    return
+
+liberar_grande:
+    btfss   PORTA,1
+    return
+    movlw   1
+    movwf   estado_anterior_grande
+    return
+
+incrementar_pequena:
+    movlb   05H
+    incf    small_unit,1,1
+    movlw   10
+    cpfseq  small_unit,b
+    goto    end_incrementar_pequena
+    clrf    small_unit,b
+    incf    small_ten,1,1
+    movlw   10
+    cpfseq  small_ten,b
+    goto    end_incrementar_pequena
+    clrf    small_ten,b
+end_incrementar_pequena:
+    return
+
+incrementar_grande:
+    movlb   05H
+    incf    large_unit,1,1
+    movlw   10
+    cpfseq  large_unit,b
+    goto    end_incrementar_grande
+    clrf    large_unit,b
+    incf    large_ten,1,1
+    movlw   10
+    cpfseq  large_ten,b
+    goto    end_incrementar_grande
+    clrf    large_ten,b
+end_incrementar_grande:
+    return
+
+display:
+    movlb   05H
+    movf    small_unit,0,1
+    movlb   04H
+    movwf   TBLPTRL,b
+    TBLRD*
+    movff   TABLAT,LATD
+    bsf     LATB,0,b
+    call    retardo
+    bcf     LATB,0,b
+
+    movlb   05H
+    movf    small_ten,0,1
+    movlb   04H
+    movwf   TBLPTRL,b
+    TBLRD*
+    movff   TABLAT,LATD
+    bsf     LATB,1,b
+    call    retardo
+    bcf     LATB,1,b
+
+    movlb   05H
+    movf    large_unit,0,1
+    movlb   04H
+    movwf   TBLPTRL,b
+    TBLRD*
+    movff   TABLAT,LATD
+    bsf     LATB,2,b
+    call    retardo
+    bcf     LATB,2,b
+
+    movlb   05H
+    movf    large_ten,0,1
+    movlb   04H
+    movwf   TBLPTRL,b
+    TBLRD*
+    movff   TABLAT,LATD
+    bsf     LATB,3,b
+    call    retardo
+    bcf     LATB,3,b
+    goto    loop
+    
+retardo:
+    movlw   5
+    movwf   var3, b
+
+xxx:
+    movlw   100
+    movwf   var4, b
+
+yyy:
+    decfsz  var4,1,1
+    goto    yyy
+    decfsz  var3,1,1
+    goto    xxx
+    return
+
+end
