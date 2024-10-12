@@ -1,0 +1,79 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <pic18f57q43.h>
+#include <xc.h>
+#include "cabzon.h"
+
+#define _XTAL_FREQ 4000000UL
+
+void configuro();
+void __interrupt(high_priority) ISR_HP();
+void __interrupt(low_priority) ISR_LP();
+
+void main(void)
+{
+    configuro();
+    while (1)
+    {
+        LATAbits.LATA0 = 1;
+        __delay_ms(125);
+        LATAbits.LATA0 = 0;
+        __delay_ms(125);
+    }
+}
+
+void configuro()
+{
+    OSCCON1 = 0x60;   // HFINTOSC seleccionado
+    OSCFRQ = 0x02;    // HFINTOSC a 4MHz
+    OSCEN = 0x40;     // HFINTOSC habilitado
+    TRISAbits.TRISA0 = 0;  // RA0: salida
+    ANSELAbits.ANSELA0 = 0; // RA0: digital
+    LATAbits.LATA0 = 0;     // RA0: apagado
+    TRISB = 0xFF;           // RB: entradas
+    ANSELB = 0x00;          // RB: digital
+    TRISD = 0x00;           // RD: salidas
+    ANSELD = 0x00;          // RD: digital
+    LATD = 0x00;            // RD: apagado
+    WPUBbits.WPUB0 = 1;     // Pull-UP para RB0
+    WPUBbits.WPUB1 = 1;     // Pull-UP para RB1
+    IPR0bits.INT0IP = 1;    // INT0: alta prioridad
+    IPR1bits.INT1IP = 0;    // INT1: baja prioridad
+    INTCON0bits.IPEN = 1;   // Habilitar niveles de prioridad
+    INTCON0bits.GIEH = 1;   // Habilitador global de interrupciones altas
+    INTCON0bits.GIEL = 1;   // Habilitador global de interrupciones bajas
+    INTCON0bits.INT0EDG = 0; // RB0: flanco de bajada
+    INTCON0bits.INT1EDG = 0; // RB1: flanco de bajada
+    PIE0bits.INT0IE = 1;    // Habilitador de interrupción para INT0
+    PIE1bits.INT1IE = 1;    // Habilitador de interrupción para INT1
+}
+
+void __interrupt(high_priority) ISR_HP()
+{
+    if (PIR0bits.INT0IF == 1)
+    {
+        for (int i = 0; i < 5; i++)
+        {
+            LATDbits.LATD0 = 1;
+            __delay_ms(200);
+            LATDbits.LATD0 = 0;
+            __delay_ms(200);
+        }
+        PIR0bits.INT0IF = 0;
+    }
+}
+
+void __interrupt(low_priority) ISR_LP()
+{
+    if (PIR1bits.INT1IF == 1)
+    {
+        for (int i = 0; i < 5; i++)
+        {
+            LATDbits.LATD1 = 1;
+            __delay_ms(200);
+            LATDbits.LATD1 = 0;
+            __delay_ms(200);
+        }
+        PIR1bits.INT1IF = 0;
+    }
+}
