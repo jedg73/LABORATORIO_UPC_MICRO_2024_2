@@ -1,0 +1,44 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <pic18f57q43.h>
+#include <xc.h>
+#include "cabzon.h"
+
+#define _XTAL_FREQ 4000000UL
+
+void configuro();
+
+void main(void)
+{
+    configuro();
+    while (1)
+    {
+        switch (PORTB & 0x03)
+        {
+            case 0x00:
+                LATAbits.LATA0 = 0;
+                break;
+            case 0x01:
+                LATAbits.LATA0 = 1;
+                break;
+            case 0x02:
+                LATAbits.LATA0 = 1;
+                break;
+            case 0x03:
+                LATAbits.LATA0 = 0;
+                break;
+        }
+    }
+}
+
+void configuro()
+{
+    OSCCON1 = 0x60;    // HFINTOSC
+    OSCFRQ = 0x02;     // HFINTOSC a 4MHz
+    OSCEN = 0x40;      // HFINTOSC enable
+    TRISB = 0x03;      // RB0 y RB1: entrada
+    ANSELB = 0x00;     // RB como digital
+    TRISAbits.TRISA0 = 0;  // RA0: salida
+    ANSELAbits.ANSELA0 = 0; // RA0: digital
+    LATAbits.LATA0 = 0;     // RA0: apagado
+}
