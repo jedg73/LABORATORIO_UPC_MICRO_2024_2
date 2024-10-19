@@ -1,0 +1,60 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <pic18f57q43.h>
+#include <xc.h>
+#include "cabzon.h"
+#include "LCD.h"
+
+#define _XTAL_FREQ 4000000UL
+
+int humedad = 65;  // Valor inicial de humedad
+unsigned int decena = 0;
+unsigned int unidad = 0;
+
+void configuro();
+void convierte(unsigned int numero);
+void LCD_init();
+
+void main(void)
+{
+    configuro();
+    LCD_init();
+    
+    while(1)
+    {
+        convierte(humedad);  // Convierte el valor de humedad a decenas y unidades
+        POS_CURSOR(1, 5);    // Posiciona el cursor en la fila 1, columna 5
+        ESCRIBE_MENSAJE("HUM:", 5);  // Escribe "HUM:" en la LCD
+        ENVIA_CHAR(decena + 48);  // Envía la decena como carácter ASCII
+        ENVIA_CHAR(unidad + 48);  // Envía la unidad como carácter ASCII
+        
+        POS_CURSOR(1, 12);   // Posiciona el cursor en la fila 1, columna 12
+        ESCRIBE_MENSAJE("%", 1);  // Escribe "%" en la LCD
+        
+        __delay_ms(1000);  // Espera 1 segundo antes de la próxima actualización
+    }
+}
+
+void configuro()
+{
+    OSCCON1 = 0x60;  // HFINTOSC
+    OSCFRQ = 0x02;   // HFINTOSC a 4MHz
+    OSCEN = 0x40;    // Habilitar HFINTOSC
+    TRISD = 0x00;    // Puerto D como salida
+    ANSELD = 0x00;   // Puerto D como digital
+}
+
+void convierte(unsigned int numero)
+{
+    decena = numero / 10;    // Calcula las decenas
+    unidad = numero % 10;    // Calcula las unidades
+}
+
+void LCD_init()
+{
+    __delay_ms(29);   // Retardo inicial para estabilizar
+    LCD_CONFIG();     // Configuración del LCD
+    BORRAR_LCD();     // Limpiar el LCD
+    CURSOR_HOME();    // Llevar el cursor al inicio
+    CURSOR_ONOFF(OFF); // Apagar el cursor para evitar parpadeo
+}
