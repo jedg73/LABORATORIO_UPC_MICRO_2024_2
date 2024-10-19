@@ -1,0 +1,71 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <pic18f57q43.h>
+#include <xc.h>
+#include "cabzon.h"
+#include "LCD.h"
+
+#define _XTAL_FREQ 4000000UL
+
+unsigned int cuenta = 0;
+unsigned char centena = 0;
+unsigned char decena = 0;
+unsigned char unidad = 0;
+
+void configuro();
+void LCD_init();
+void convierte(int numero);
+
+void main(void)
+{
+    configuro();
+    LCD_init();
+    POS_CURSOR(1, 6);
+    ESCRIBE_MENSAJE("UPC", 3);
+    
+    while(1)
+    {
+        POS_CURSOR(2, 3);
+        ESCRIBE_MENSAJE("cuenta= ", 8);  // Muestra "cuenta= " en la LCD
+        convierte(cuenta);  // Convierte el valor de cuenta a centenas, decenas y unidades
+        ENVIA_CHAR(centena + 48);  // Envía la centena como carácter ASCII
+        ENVIA_CHAR(decena + 48);   // Envía la decena como carácter ASCII
+        ENVIA_CHAR(unidad + 48);   // Envía la unidad como carácter ASCII
+        
+        if (cuenta == 999)
+        {
+            cuenta = 0;  // Reinicia la cuenta cuando llega a 999
+        }
+        else
+        {
+            cuenta++;  // Incrementa la cuenta
+        }
+        
+        __delay_ms(100);  // Espera 100 ms antes de la próxima actualización
+    }
+}
+
+void configuro()
+{
+    OSCCON1 = 0x60;  // HFINTOSC
+    OSCFRQ = 0x02;   // HFINTOSC a 4MHz
+    OSCEN = 0x40;    // Habilitar HFINTOSC
+    TRISD = 0x00;    // Puerto D como salida
+    ANSELD = 0x00;   // Puerto D como digital
+}
+
+void LCD_init()
+{
+    __delay_ms(29);   // Retardo inicial para estabilizar
+    LCD_CONFIG();     // Configuración del LCD
+    BORRAR_LCD();     // Limpiar el LCD
+    CURSOR_HOME();    // Llevar el cursor al inicio
+    CURSOR_ONOFF(OFF); // Apagar el cursor para evitar parpadeo
+}
+
+void convierte(int numero)
+{
+    centena = numero / 100;            // Calcula las centenas
+    decena = (numero % 100) / 10;      // Calcula las decenas
+    unidad = numero % 10;              // Calcula las unidades
+}
