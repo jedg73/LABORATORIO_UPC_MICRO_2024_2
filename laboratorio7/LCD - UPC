@@ -18,7 +18,7 @@ void main(void)
     POS_CURSOR(1, 6);
     ESCRIBE_MENSAJE("UPC", 3);
     POS_CURSOR(2, 5);
-    ESCRIBE_MENSAJE("2023-II", 7);   
+    ESCRIBE_MENSAJE("2024-II", 7);   
 }
 
 void configuro()
