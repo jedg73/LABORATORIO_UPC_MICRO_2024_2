@@ -1,0 +1,63 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <pic18f57q43.h>
+#include <xc.h>
+#include "cabzon.h"
+#include "LCD.h"
+
+#define _XTAL_FREQ 4000000UL
+
+float TEMP[10] = {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
+float promedio_temp;
+char TT[20];
+
+void configuro();
+void LCD_init();
+float calcular_promedio(float vector[], int TAM);
+
+void main(void)
+{
+    configuro();
+    LCD_init();
+    
+    while(1)
+    {
+        promedio_temp = calcular_promedio(TEMP, 10);
+        POS_CURSOR(1, 2);
+        sprintf(TT, "TEMP = %.2f C", promedio_temp);
+        ESCRIBE_MENSAJE(TT, 14);
+        POS_CURSOR(1, 14);
+        LCD_CHAR_GRADO();  // Muestra el símbolo de grado (°)
+        __delay_ms(1000);
+    }
+}
+
+void configuro()
+{
+    OSCCON1 = 0x60;  // HFINTOSC
+    OSCFRQ = 0x02;   // HFINTOSC a 4MHz
+    OSCEN = 0x40;    // Habilitar HFINTOSC
+    TRISD = 0x00;    // Puerto D como salida
+    ANSELD = 0x00;   // Puerto D como digital
+}
+
+float calcular_promedio(float vector[], int TAM)
+{
+    float promedio;
+    float acum = 0;
+    for (int i = 0; i < TAM; i++)
+    {
+        acum = acum + vector[i];
+    }
+    promedio = acum / TAM;
+    return promedio;
+}
+
+void LCD_init()
+{
+    __delay_ms(29);   // Retardo inicial para estabilizar
+    LCD_CONFIG();     // Configuración del LCD
+    BORRAR_LCD();     // Limpiar el LCD
+    CURSOR_HOME();    // Llevar el cursor al inicio
+    CURSOR_ONOFF(OFF); // Apagar el cursor para evitar parpadeo
+}
