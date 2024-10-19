@@ -1,0 +1,48 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <pic18f57q43.h>
+#include <xc.h>
+#include "cabzon.h"
+#include "LCD.h"
+
+#define _XTAL_FREQ 4000000UL
+
+void configuro();
+void LCD_init();
+
+void main(void)
+{
+    configuro();
+    LCD_init();
+    
+    while(1)
+    {
+        for (int columna = 16; columna >= 0; columna--)  // Desde la columna 16 hasta la 0
+        {
+            POS_CURSOR(1, columna);  // Posiciona el cursor en la fila 1, columna actual
+            ESCRIBE_MENSAJE("HOLA UPC", 8);  // Escribe "HOLA UPC" en la LCD
+            __delay_ms(1000);  // Espera 1 segundo
+
+            POS_CURSOR(1, columna);  // Posiciona nuevamente en la misma fila y columna
+            ESCRIBE_MENSAJE("        ", 8);  // Borra el mensaje actual con espacios
+        }
+    }
+}
+
+void configuro()
+{
+    OSCCON1 = 0x60;  // HFINTOSC
+    OSCFRQ = 0x02;   // HFINTOSC a 4MHz
+    OSCEN = 0x40;    // Habilitar HFINTOSC
+    TRISD = 0x00;    // Puerto D como salida
+    ANSELD = 0x00;   // Puerto D como digital
+}
+
+void LCD_init()
+{
+    __delay_ms(29);   // Retardo inicial para estabilizar
+    LCD_CONFIG();     // Configuración del LCD
+    BORRAR_LCD();     // Limpiar el LCD
+    CURSOR_HOME();    // Llevar el cursor al inicio
+    CURSOR_ONOFF(OFF); // Apagar el cursor para evitar parpadeo
+}
