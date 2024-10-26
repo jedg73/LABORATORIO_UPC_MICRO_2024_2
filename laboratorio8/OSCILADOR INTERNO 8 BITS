@@ -1,0 +1,44 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <pic18f57q43.h>
+#include <xc.h>
+#include "cabzon.h"
+
+#define _XTAL_FREQ 4000000UL
+
+void configuro();
+void captura_ADC();
+
+void main(void)
+{
+    configuro();
+    while(1)
+    {
+        captura_ADC();
+        LATD = ADRESH;
+        __delay_ms(100);
+    }
+}
+
+void configuro()
+{
+    OSCCON1 = 0x60;        // HFINTOSC seleccionado
+    OSCFRQ = 0x02;         // HFINTOSC a 4MHz
+    OSCEN = 0x40;          // HFINTOSC habilitado
+    TRISAbits.TRISA0 = 1;  // RA0 como entrada
+    ANSELAbits.ANSELA0 = 1;// RA0 como analógico
+    ADCON0bits.ADFM = 0;   // Just: Izquierda
+    ADCON0bits.CS = 1;     // Fuente Reloj: ADCRC
+    ADPCH = 0x00;          // CH: RA0
+    ADCON0bits.ADON = 1;   // ADC: ON
+    ADCON2 = 0x62;         // CRS=6, modo:AVG
+    ADRPT = 64;            // Repeticiones: para cumplir 2^CRS
+    TRISD = 0x00;          // RD como salida
+    ANSELD = 0x00;         // RD como digital
+}
+
+void captura_ADC()
+{
+    ADCON0bits.GO = 1;
+    while(ADCON0bits.GO == 1);
+}
