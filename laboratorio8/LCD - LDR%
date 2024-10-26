@@ -1,0 +1,73 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <pic18f57q43.h>
+#include <xc.h>
+#include "cabzon.h"
+#include "LCD.h"
+
+#define _XTAL_FREQ 4000000UL
+
+void configuro();
+void LCD_init();
+void captura_ADC();
+int convierte(float luz);
+int valor = 0;
+int LDR = 0;
+char TT[20];
+
+void main(void)
+{
+    configuro();
+    LCD_init();
+    while(1)
+    {
+        captura_ADC();
+        valor = ADRESH;
+        LDR = convierte(valor);
+        POS_CURSOR(1,2);
+        sprintf(TT, "LUZ = %3d", LDR);
+        ESCRIBE_MENSAJE(TT,9);
+        ENVIA_CHAR('%');
+        __delay_ms(500);
+    }
+}
+
+void configuro()
+{
+    OSCCON1 = 0x60;        // HFINTOSC seleccionado
+    OSCFRQ = 0x02;         // HFINTOSC a 4MHz
+    OSCEN = 0x40;          // HFINTOSC habilitado
+    TRISAbits.TRISA1 = 1;  // RA1 como entrada
+    ANSELAbits.ANSELA1 = 1;// RA1 como analógico
+    ADCON0bits.ADFM = 0;   // Just: Izquierda
+    ADCON0bits.CS = 1;     // Fuente Reloj: ADCRC
+    ADPCH = 0x01;          // CH: RA1
+    ADCLK = 0x00;          // Fosc/2 --> TAD = 500 ns
+    ADCON0bits.ADON = 1;   // ADC: ON
+    ADCON2 = 0x62;         // CRS=6 , modo:AVG
+    ADRPT = 64;            // Repeticiones: para cumplir 2^CRS
+    TRISD = 0x00;          // RD como salida
+    ANSELD = 0x00;         // RD como digital
+}
+
+void LCD_init()
+{
+    __delay_ms(29);
+    LCD_CONFIG();
+    BORRAR_LCD();
+    CURSOR_HOME();
+    CURSOR_ONOFF(OFF);
+}
+
+void captura_ADC()
+{
+    ADCON0bits.GO = 1;
+    while(ADCON0bits.GO == 1);
+}
+
+int convierte(float luz)
+{
+    int porcentaje = 0;
+    porcentaje = (luz/250)*100;
+    return porcentaje;
+}
