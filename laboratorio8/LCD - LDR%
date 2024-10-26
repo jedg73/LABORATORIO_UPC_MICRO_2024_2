@@ -68,6 +68,6 @@ void captura_ADC()
 int convierte(float luz)
 {
     int porcentaje = 0;
-    porcentaje = (luz/250)*100;
+    porcentaje = (luz/254)*100;
     return porcentaje;
 }
