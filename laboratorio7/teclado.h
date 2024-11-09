@@ -1,5 +1,5 @@
 
-#define TECLADO_H
+#ifndef TECLADO_H
 #define	TECLADO_H
 
 #define PB7     7
