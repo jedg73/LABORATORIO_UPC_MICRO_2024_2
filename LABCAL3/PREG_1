@@ -1,0 +1,175 @@
+#include "cabecera.h"
+#include "LCD.h"
+#include "LIB_UART.h"
+#include <stdlib.h>
+#include <stdio.h>
+#define _XTAL_FREQ 8000000UL
+
+void configuro();
+void LCD_init();
+void UART_init();
+unsigned int lectura_ADC_0(void);
+unsigned int lectura_ADC_1(void);
+unsigned int lectura_ADC_2(void);
+unsigned int lectura_ADC_3(void);
+void mostrar_parametros();
+void mostrar_voltajes();
+
+float convertir_temperatura(float voltaje);
+float convertir_ritmo_cardiaco(float voltaje);
+float convertir_presion_sistolica(float voltaje);
+float convertir_presion_diastolica(float voltaje);
+float convertir_frecuencia_respiratoria(float voltaje);
+
+// Funciones de conversión actualizadas con las ecuaciones proporcionadas
+float convertir_temperatura(float voltaje) {
+    return (7.49 * voltaje) + 5.27;
+}
+
+float convertir_ritmo_cardiaco(float voltaje) {
+    return (18.59 * voltaje) + 37.17;
+}
+
+float convertir_presion_sistolica(float voltaje) {
+    return (13.69 * voltaje) + 92.11;
+}
+
+float convertir_presion_diastolica(float voltaje) {
+    return (8.72 * voltaje) + 60.11;
+}
+
+float convertir_frecuencia_respiratoria(float voltaje) {
+    return (10.95 * voltaje) + 6.33;
+}
+
+void main(void) {
+    configuro();
+    LCD_init();
+    UART_init();  // Inicializar UART
+
+    while(1) {
+        mostrar_parametros();
+        __delay_ms(1000);
+
+        mostrar_voltajes();
+        __delay_ms(1000);
+    }
+}
+
+void mostrar_parametros() {
+    char buffer[16];
+
+    // Lectura y conversión de valores
+    float temp = convertir_temperatura(lectura_ADC_0() * 5.0 / 4096.0);
+    float ritmo = convertir_ritmo_cardiaco(lectura_ADC_1() * 5.0 / 4096.0);
+    float presion_sis = convertir_presion_sistolica(lectura_ADC_2() * 5.0 / 4096.0);
+    float presion_dia = convertir_presion_diastolica(lectura_ADC_3() * 5.0 / 4096.0);
+    float frecuencia_resp = convertir_frecuencia_respiratoria(lectura_ADC_3() * 5.0 / 4096.0);
+
+    // Mostrar en el LCD en el nuevo formato
+    POS_CURSOR(1, 0);
+    sprintf(buffer, "T=%.1f P=%.1f/%.1f", temp, presion_sis, presion_dia); 
+    ESCRIBE_MENSAJE(buffer, 16);
+
+    POS_CURSOR(2, 0);
+    sprintf(buffer, "R=%.1f F=%.1f", ritmo, frecuencia_resp);
+    ESCRIBE_MENSAJE(buffer, 16);
+
+    // Enviar al UART
+    U1_STRING_SEND("Parametros:");
+    U1_NEWLINE();
+    sprintf(buffer, "Temp: %.1f C, Presion Sist: %.1f, Diast: %.1f", temp, presion_sis, presion_dia);
+    U1_STRING_SEND(buffer);
+    U1_NEWLINE();
+    sprintf(buffer, "Ritmo Cardiaco: %.1f, Frec Resp: %.1f", ritmo, frecuencia_resp);
+    U1_STRING_SEND(buffer);
+    U1_NEWLINE();
+}
+
+
+
+void mostrar_voltajes() {
+    char buffer[16];
+
+    // Lectura de voltajes de cada canal ADC
+    float volt0 = lectura_ADC_0() * 5.0 / 4096.0;
+    float volt1 = lectura_ADC_1() * 5.0 / 4096.0;
+    float volt2 = lectura_ADC_2() * 5.0 / 4096.0;
+    float volt3 = lectura_ADC_3() * 5.0 / 4096.0;
+
+    // Mostrar en el LCD
+    POS_CURSOR(1, 0);
+    sprintf(buffer, "A0=%.1fV  A2=%.1fV", volt0, volt2);
+    ESCRIBE_MENSAJE(buffer, 16);
+
+    POS_CURSOR(2, 0);
+    sprintf(buffer, "A1=%.1fV  A3=%.1fV", volt1, volt3);
+    ESCRIBE_MENSAJE(buffer, 16);
+
+    // Enviar al UART
+    U1_STRING_SEND("Voltajes ADC:");
+    U1_NEWLINE();
+    sprintf(buffer, "A0: %.2fV, A1: %.2fV", volt0, volt1);
+    U1_STRING_SEND(buffer);
+    U1_NEWLINE();
+    sprintf(buffer, "A2: %.2fV, A3: %.2fV", volt2, volt3);
+    U1_STRING_SEND(buffer);
+    U1_NEWLINE();
+}
+
+unsigned int lectura_ADC_0(void) {
+    ADPCH = 0B101000;           // Selecciona AN0 RF0
+    ADCON0bits.GO = 1;          // Inicia la conversión
+    while(ADCON0bits.GO);       // Espera a que termine la conversión
+    return ((ADRESH << 8) + ADRESL); // Retorna el valor del ADC
+}
+
+unsigned int lectura_ADC_1(void) {
+    ADPCH = 0B101001;           // Selecciona AN1 RF1
+    ADCON0bits.GO = 1;          // Inicia la conversión
+    while(ADCON0bits.GO);       // Espera a que termine la conversión
+    return ((ADRESH << 8) + ADRESL); // Retorna el valor del ADC
+}
+
+unsigned int lectura_ADC_2(void) {
+    ADPCH = 0B101010;           // Selecciona AN2 RF2
+    ADCON0bits.GO = 1;          // Inicia la conversión
+    while(ADCON0bits.GO);       // Espera a que termine la conversión
+    return ((ADRESH << 8) + ADRESL); // Retorna el valor del ADC
+}
+
+unsigned int lectura_ADC_3(void) {
+    ADPCH = 0B101011;           // Selecciona AN3 RF3
+    ADCON0bits.GO = 1;          // Inicia la conversión
+    while(ADCON0bits.GO);       // Espera a que termine la conversión
+    return ((ADRESH << 8) + ADRESL); // Retorna el valor del ADC
+}
+
+// Repetir la función de lectura ADC para los demás canales
+
+void configuro() {
+    OSCCON1 = 0x60;             // HFINTOSC
+    OSCFRQ  = 0x03;             // HFINTOSC a  8MHz
+    OSCEN   = 0x40;             // Habilitar HFINTOSC
+    
+    // Configuración ADC
+    TRISF  = 0x0F;              // RF3:RF0 entrada
+    ANSELF = 0x0F;              // RF3:RF0 analógico
+    ADCON0 = 0x94;              // Configuración del ADCON0
+
+    // Configuración del LCD
+    TRISD = 0x00;
+    ANSELD = 0x00;
+}
+
+void LCD_init() {
+    __delay_ms(29);
+    LCD_CONFIG();
+    BORRAR_LCD();
+    CURSOR_HOME();
+    CURSOR_ONOFF(OFF);
+}
+
+void UART_init() {
+    U1_INIT(26);  // Configuración del UART a 19200 baudios
+}
