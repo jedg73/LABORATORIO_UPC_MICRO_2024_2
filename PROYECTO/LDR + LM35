@@ -1,0 +1,82 @@
+#include <xc.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include "cabzon.h"
+#include "LCD.h"
+#include "LM35.h"
+#include "LDR.h"
+
+#define _XTAL_FREQ 4000000UL
+
+// Prototipos
+void configuro_base(void);
+void configuro_adc_lm35(void);
+void configuro_adc_ldr(void);
+
+void main(void) {
+    char buffer[16];
+    float temperatura;
+    unsigned char ldr_adc_valor;
+    int ldr_porcentaje;
+
+    configuro_base(); // Configuración inicial básica
+    LCD_INIT();
+    LM35_init();
+
+    while (1) {
+        // Leer temperatura desde el LM35
+        configuro_adc_lm35(); // Configurar ADC para LM35
+        temperatura = LM35_getTemperature();
+
+        // Leer luz desde el LDR
+        configuro_adc_ldr(); // Configurar ADC para LDR
+        captura_ADC();       // Realizar lectura del ADC
+        ldr_adc_valor = ADRESH; // Usar parte alta del resultado ADC
+        ldr_porcentaje = convierte_a_porcentaje(ldr_adc_valor);
+
+        // Mostrar la temperatura
+        BORRAR_LCD();
+        POS_CURSOR(1, 0);
+        sprintf(buffer, "Temp: %.1f C", temperatura);
+        ESCRIBE_MENSAJE(buffer, strlen(buffer));
+
+        // Mostrar la luz
+        POS_CURSOR(2, 0);
+        sprintf(buffer, "Luz: %d%%", ldr_porcentaje);
+        ESCRIBE_MENSAJE(buffer, strlen(buffer));
+
+        __delay_ms(1000); // Actualizar cada segundo
+    }
+}
+
+// Configuración base para pines
+void configuro_base(void) {
+    OSCCON1 = 0x60;        // HFINTOSC seleccionado
+    OSCFRQ = 0x02;         // HFINTOSC a 4MHz
+    TRISAbits.TRISA0 = 1;  // RA0 como entrada (LM35)
+    ANSELAbits.ANSELA0 = 1;// RA0 como analógico
+    TRISAbits.TRISA1 = 1;  // RA1 como entrada (LDR)
+    ANSELAbits.ANSELA1 = 1;// RA1 como analógico
+    TRISD = 0x00;          // RD como salida
+    ANSELD = 0x00;         // RD como digital
+}
+
+// Configuración del ADC para LM35
+void configuro_adc_lm35(void) {
+    ADCON0bits.ADFM = 1;   // Justificación a la derecha
+    ADCON0bits.CS = 1;     // Fuente de reloj interno (ADCRC)
+    ADPCH = 0x00;          // Canal RA0 (AN0)
+    ADCON2 = 0x00;         // Sin promedio
+    ADCON0bits.ADON = 1;   // Habilitar ADC
+}
+
+// Configuración del ADC para LDR
+void configuro_adc_ldr(void) {
+    ADCON0bits.ADFM = 0;   // Justificación a la izquierda
+    ADCON0bits.CS = 1;     // Fuente de reloj interno (ADCRC)
+    ADPCH = 0x01;          // Canal RA1 (AN1)
+    ADCON2 = 0x62;         // CRS = 6 (modo promedio)
+    ADRPT = 64;            // Número de repeticiones
+    ADCON0bits.ADON = 1;   // Habilitar ADC
+}
