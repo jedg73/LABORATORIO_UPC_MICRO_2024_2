@@ -5,6 +5,15 @@
 #define WET_VALUE 657   // ADC para 100% de humedad (totalmente sumergido)
 #define DRY_VALUE 4094  // ADC para 0% de humedad (al aire)
 
+
+
+void configuro_adc_fc28(void) {
+    ADCON0bits.ADFM = 1;   // Justificación a la derecha
+    ADCON0bits.CS = 1;     // Fuente de reloj interno (ADCRC)
+    ADPCH = 0x02;          // Canal RA2 (AN2)
+    ADCON2 = 0x00;         // Sin promedio
+    ADCON0bits.ADON = 1;   // Habilitar ADC
+}
 void FC28_init(void) {
     // Configuración del ADC para el sensor FC-28
     TRISAbits.TRISA2 = 1;   // Configurar RA2 como entrada
