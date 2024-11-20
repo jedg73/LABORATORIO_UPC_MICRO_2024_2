@@ -21,9 +21,7 @@ void actualiza_LCD(const char *linea1, const char *linea2, const char *linea3);
 // Variables globales
 char buffer[16];
 char estado_actual[32] = "";
-char ultima_linea1[16] = "";
-char ultima_linea2[16] = "";
-char ultima_linea3[16] = "";
+char modo_luz[10] = "Día"; // Por defecto, el modo de luz es "Día"
 
 void main(void) {
     configuro(); // Configuración inicial
@@ -80,7 +78,7 @@ void main(void) {
                     break;
                 }
 
-                case '3': { // Actualizar y mostrar luz en tiempo real
+                case '3': { // Mostrar luz en tiempo real
                     strcpy(estado_actual, "luz");
                     while (1) {
                         configuro_adc_ldr(); // Configurar ADC para LDR
@@ -102,10 +100,46 @@ void main(void) {
 
                 case '4': { // Submenú de configuración
                     strcpy(estado_actual, "config");
-                    actualiza_LCD("1.C.Temp  2.C.Hum", "3.C.Luz   #.Volver", "");
                     while (1) {
+                        actualiza_LCD("1.C.Temp  2.C.Hum", "3.C.Luz   #.Volver", "");
                         tecla = teclado_getc();
-                        if (tecla == '#') { // Volver al menú principal
+                        if (tecla == '1') { // Submenú 1.C.Temp
+                            strcpy(estado_actual, "c_temp");
+                            while (1) {
+                                actualiza_LCD("1.T.Max", "2.T.Ideal", "#. Volver");
+                                tecla = teclado_getc();
+                                if (tecla == '#') { // Volver al submenú de configuración
+                                    strcpy(estado_actual, "config");
+                                    break;
+                                }
+                            }
+                        } else if (tecla == '2') { // Submenú 2.C.Hum
+                            strcpy(estado_actual, "c_hum");
+                            while (1) {
+                                actualiza_LCD("1.H.Min", "2.H.Ideal", "#. Volver");
+                                tecla = teclado_getc();
+                                if (tecla == '#') { // Volver al submenú de configuración
+                                    strcpy(estado_actual, "config");
+                                    break;
+                                }
+                            }
+                        } else if (tecla == '3') { // Submenú 3.C.Luz
+                            strcpy(estado_actual, "c_luz");
+                            while (1) {
+                                sprintf(buffer, "Modo actual:%s", modo_luz);
+                                actualiza_LCD(buffer, "1.Dia  2.Noche", "#. Volver");
+                                tecla = teclado_getc();
+                                if (tecla == '1') {
+                                    strcpy(modo_luz, "Día"); // Cambiar a modo "Día"
+                                } else if (tecla == '2') {
+                                    strcpy(modo_luz, "Noche"); // Cambiar a modo "Noche"
+                                } else if (tecla == '#') { // Volver al submenú de configuración
+                                    strcpy(estado_actual, "config");
+                                    break;
+                                }
+                                __delay_ms(200); // Evitar parpadeos
+                            }
+                        } else if (tecla == '#') { // Volver al menú principal
                             strcpy(estado_actual, "menu");
                             break;
                         }
@@ -133,7 +167,7 @@ void configuro(void) {
     OSCCON1 = 0x60;  // HFINTOSC
     OSCFRQ = 0x02;   // HFINTOSC a 4MHz
     OSCEN = 0x40;    // Habilitar HFINTOSC
-    
+
     // Configuración de pines
     TRISB = 0xF0;    // RB4-RB7 (columnas) como entrada, RB0-RB3 (filas) como salida
     ANSELB = 0x00;   // Puerto B como digital
