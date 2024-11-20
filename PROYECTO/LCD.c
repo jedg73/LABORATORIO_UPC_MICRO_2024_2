@@ -272,3 +272,22 @@ void LCD_VARCHAR_BITS(unsigned char dato){
         }
     }
 }
+
+static char ultima_linea1[16] = "";
+static char ultima_linea2[16] = "";
+static char ultima_linea3[16] = "";
+
+void actualiza_LCD(const char *linea1, const char *linea2, const char *linea3) {
+    if (strcmp(ultima_linea1, linea1) != 0 || strcmp(ultima_linea2, linea2) != 0 || strcmp(ultima_linea3, linea3) != 0) {
+        BORRAR_LCD();
+        POS_CURSOR(1, 0);
+        ESCRIBE_MENSAJE(linea1, strlen(linea1));
+        POS_CURSOR(2, 0);
+        ESCRIBE_MENSAJE(linea2, strlen(linea2));
+        POS_CURSOR(3, 0);
+        ESCRIBE_MENSAJE(linea3, strlen(linea3));
+        strncpy(ultima_linea1, linea1, sizeof(ultima_linea1));
+        strncpy(ultima_linea2, linea2, sizeof(ultima_linea2));
+        strncpy(ultima_linea3, linea3, sizeof(ultima_linea3));
+    }
+}
