@@ -1,0 +1,239 @@
+#include <xc.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include "cabzon.h"
+#include "LCD.h"
+#include "teclado.h"
+#include "LM35.h"
+#include "LDR.h"
+#include "FC28.h"
+
+#define _XTAL_FREQ 4000000UL
+
+// Prototipos
+void configuro(void);
+void configuro_adc_lm35(void);
+void configuro_adc_ldr(void);
+void configuro_adc_fc28(void);
+void actualiza_LCD(const char *linea1, const char *linea2, const char *linea3);
+int capturar_numero(const char *mensaje, const char *unidad);
+
+// Variables globales
+char buffer[16];
+char estado_actual[32] = "";
+char modo_luz[10] = "Dia"; // Por defecto, el modo de luz es "Día"
+
+// Parámetros configurables
+float temp_ideal = 25.0;     // Temperatura ideal (°C)
+float temp_max = 30.0;       // Temperatura máxima (°C)
+uint8_t hum_ideal = 60;      // Humedad ideal (%)
+uint8_t hum_min = 40;        // Humedad mínima (%)
+
+void main(void) {
+    configuro(); // Configuración inicial
+    LCD_INIT();
+    teclado_init();
+
+    char tecla = 0; // Variable para guardar la tecla presionada
+
+    while (1) {
+        // Menú principal
+        if (strlen(estado_actual) == 0 || strcmp(estado_actual, "menu") == 0) {
+            actualiza_LCD("1.Temp  2.Humedad", "3.Luz   4.Config", "");
+            strcpy(estado_actual, "menu");
+        }
+
+        tecla = teclado_getc(); // Leer tecla
+
+        if (tecla != 0) { // Si se presionó una tecla
+            switch (tecla) {
+                case '1': { // Mostrar temperatura en tiempo real
+                    strcpy(estado_actual, "temp");
+                    while (1) {
+                        configuro_adc_lm35();
+                        float temperatura = LM35_getTemperature();
+
+                        // Control del ventilador
+                        if (temperatura > temp_max) {
+                            LATCbits.LATC1 = 1; // Encender ventilador
+                            sprintf(buffer, "%.1f C (Vent)", temperatura);
+                        } else {
+                            LATCbits.LATC1 = 0; // Apagar ventilador
+                            sprintf(buffer, "%.1f C", temperatura);
+                        }
+
+                        actualiza_LCD("Temp Actual:", buffer, "#. Volver");
+                        tecla = teclado_getc();
+                        if (tecla == '#') {
+                            strcpy(estado_actual, "menu");
+                            break;
+                        }
+                        __delay_ms(500);
+                    }
+                    break;
+                }
+
+                case '2': { // Mostrar humedad en tiempo real
+                    strcpy(estado_actual, "humedad");
+                    while (1) {
+                        configuro_adc_fc28();
+                        uint16_t fc28_adc_valor = FC28_readADC();
+                        int humedad = FC28_getMoisturePercentage(fc28_adc_valor);
+
+                        // Control de la bomba de agua
+                        if (humedad < hum_min) {
+                            LATCbits.LATC0 = 1; // Encender bomba de agua
+                        } else {
+                            LATCbits.LATC0 = 0; // Apagar bomba de agua
+                        }
+
+                        sprintf(buffer, "%d%%", humedad);
+                        actualiza_LCD("Humedad Actual:", buffer, "#. Volver");
+                        tecla = teclado_getc();
+                        if (tecla == '#') {
+                            strcpy(estado_actual, "menu");
+                            break;
+                        }
+                        __delay_ms(500);
+                    }
+                    break;
+                }
+
+                case '3': { // Mostrar luz en tiempo real
+                    strcpy(estado_actual, "luz");
+                    while (1) {
+                        configuro_adc_ldr();
+                        captura_ADC(); // Leer ADC
+                        unsigned char ldr_adc_valor = ADRESH;
+                        int ldr_porcentaje = convierte_a_porcentaje(ldr_adc_valor);
+
+                        sprintf(buffer, "%d%%", ldr_porcentaje);
+                        actualiza_LCD("Nivel de Luz:", buffer, "#. Volver");
+                        tecla = teclado_getc();
+                        if (tecla == '#') {
+                            strcpy(estado_actual, "menu");
+                            break;
+                        }
+                        __delay_ms(500);
+                    }
+                    break;
+                }
+
+                case '4': { // Submenú de configuración
+                    strcpy(estado_actual, "config");
+                    while (1) {
+                        actualiza_LCD("1.Tempera 2.Humedad", "3.Luz   #.Volver", "");
+                        tecla = teclado_getc();
+
+                        if (tecla == '1') { // Configuración de temperatura
+                            actualiza_LCD("1.Ideal", "2.Maxima", "#.Volver");
+                            while (1) {
+                                tecla = teclado_getc();
+                                if (tecla == '1') {
+                                    int nueva_temp_ideal = capturar_numero("T Ideal (C):", "# Confirma");
+                                    if (nueva_temp_ideal >= 0) {
+                                        temp_ideal = nueva_temp_ideal;
+                                        sprintf(buffer, "Ideal: %.1fC", temp_ideal);
+                                        actualiza_LCD("Guardado!", buffer, "");
+                                        __delay_ms(1500);
+                                    }
+                                    break;
+                                } else if (tecla == '2') {
+                                    int nueva_temp_max = capturar_numero("T Max (C):", "# Confirma");
+                                    if (nueva_temp_max >= 0) {
+                                        temp_max = nueva_temp_max;
+                                        sprintf(buffer, "Max: %.1fC", temp_max);
+                                        actualiza_LCD("Guardado!", buffer, "");
+                                        __delay_ms(1500);
+                                    }
+                                    break;
+                                } else if (tecla == '#') {
+                                    break;
+                                }
+                            }
+                        } else if (tecla == '2') { // Configuración de humedad
+                            actualiza_LCD("1.Ideal", "2.Minima", "#.Volver");
+                            while (1) {
+                                tecla = teclado_getc();
+                                if (tecla == '1') {
+                                    int nueva_hum_ideal = capturar_numero("H Ideal (%):", "# Confirma");
+                                    if (nueva_hum_ideal >= 0) {
+                                        hum_ideal = nueva_hum_ideal;
+                                        sprintf(buffer, "Ideal: %d%%", hum_ideal);
+                                        actualiza_LCD("Guardado!", buffer, "");
+                                        __delay_ms(1500);
+                                    }
+                                    break;
+                                } else if (tecla == '2') {
+                                    int nueva_hum_min = capturar_numero("H Min (%):", "# Confirma");
+                                    if (nueva_hum_min >= 0) {
+                                        hum_min = nueva_hum_min;
+                                        sprintf(buffer, "Min: %d%%", hum_min);
+                                        actualiza_LCD("Guardado!", buffer, "");
+                                        __delay_ms(1500);
+                                    }
+                                    break;
+                                } else if (tecla == '#') {
+                                    break;
+                                }
+                            }
+                        } else if (tecla == '#') { // Volver al menú principal
+                            strcpy(estado_actual, "menu");
+                            break;
+                        }
+                    }
+                    break;
+                }
+
+                default: // Opción inválida
+                    actualiza_LCD("Opcion invalida", "", "");
+                    __delay_ms(1000);
+                    strcpy(estado_actual, "menu");
+                    break;
+            }
+        }
+        __delay_ms(100);
+    }
+}
+
+void configuro(void) {
+    OSCCON1 = 0x60;  // HFINTOSC
+    OSCFRQ = 0x02;   // HFINTOSC a 4MHz
+    OSCEN = 0x40;    // Habilitar HFINTOSC
+
+    TRISB = 0xF0;    // RB4-RB7 como entrada, RB0-RB3 como salida
+    ANSELB = 0x00;   // Puerto B como digital
+    WPUB = 0xF0;     // Pull-up habilitados para las columnas
+    TRISD = 0x00;    // Puerto D como salida
+    ANSELD = 0x00;   // Puerto D como digital
+    LATD = 0x00;     // Apagar todas las salidas en el puerto D
+
+    TRISCbits.TRISC0 = 0; // Salida para la bomba
+    TRISCbits.TRISC1 = 0; // Salida para el ventilador
+    LATCbits.LATC0 = 0;   // Inicialmente apagados
+    LATCbits.LATC1 = 0;
+}
+
+int capturar_numero(const char *mensaje, const char *unidad) {
+    char entrada[4] = ""; // Hasta 3 dígitos
+    int i = 0;
+    char tecla;
+
+    actualiza_LCD(mensaje, "Ingrese valor:", unidad);
+    while (1) {
+        tecla = teclado_getc();
+        if (tecla >= '0' && tecla <= '9') {
+            if (i < 3) {
+                entrada[i++] = tecla;
+                entrada[i] = '\0';
+                actualiza_LCD(mensaje, entrada, unidad);
+            }
+        } else if (tecla == '#') {
+            return atoi(entrada);
+        } else if (tecla == '*') {
+            return -1;
+        }
+        __delay_ms(200);
+    }
+}
