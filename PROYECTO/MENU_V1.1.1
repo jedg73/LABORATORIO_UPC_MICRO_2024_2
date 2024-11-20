@@ -21,6 +21,9 @@ void actualiza_LCD(const char *linea1, const char *linea2, const char *linea3);
 // Variables globales
 char buffer[16];
 char estado_actual[32] = "";
+char ultima_linea1[16] = "";
+char ultima_linea2[16] = "";
+char ultima_linea3[16] = "";
 
 void main(void) {
     configuro(); // Configuración inicial
@@ -30,7 +33,7 @@ void main(void) {
     char tecla = 0; // Variable para guardar la tecla presionada
 
     while (1) {
-        // Mostrar el menú principal si no hay estado previo
+        // Menú principal
         if (strlen(estado_actual) == 0 || strcmp(estado_actual, "menu") == 0) {
             actualiza_LCD("1.Temp  2.Humedad", "3.Luz   4.Config", "");
             strcpy(estado_actual, "menu");
@@ -46,14 +49,14 @@ void main(void) {
                         configuro_adc_lm35(); // Configurar ADC para LM35
                         float temperatura = LM35_getTemperature();
                         sprintf(buffer, "%.1f C", temperatura);
-                        actualiza_LCD("Temperatura:", buffer, "Presione * para vol");
-                        __delay_ms(500); // Actualizar cada 500 ms
+                        actualiza_LCD("Temperatura:", buffer, "*. Volver");
 
                         tecla = teclado_getc();
                         if (tecla == '*') { // Regresar al menú principal
                             strcpy(estado_actual, "menu");
                             break;
                         }
+                        __delay_ms(500); // Actualizar cada 500 ms
                     }
                     break;
                 }
@@ -65,14 +68,14 @@ void main(void) {
                         uint16_t fc28_adc_valor = FC28_readADC();
                         int humedad = FC28_getMoisturePercentage(fc28_adc_valor);
                         sprintf(buffer, "%d%%", humedad);
-                        actualiza_LCD("Humedad:", buffer, "Presione * para vol");
-                        __delay_ms(500); // Actualizar cada 500 ms
+                        actualiza_LCD("Humedad:", buffer, "*. Volver");
 
                         tecla = teclado_getc();
                         if (tecla == '*') { // Regresar al menú principal
                             strcpy(estado_actual, "menu");
                             break;
                         }
+                        __delay_ms(500); // Actualizar cada 500 ms
                     }
                     break;
                 }
@@ -85,11 +88,24 @@ void main(void) {
                         unsigned char ldr_adc_valor = ADRESH;
                         int ldr_porcentaje = convierte_a_porcentaje(ldr_adc_valor);
                         sprintf(buffer, "%d%%", ldr_porcentaje);
-                        actualiza_LCD("Luz:", buffer, "Presione * para vol");
-                        __delay_ms(500); // Actualizar cada 500 ms
+                        actualiza_LCD("Luz:", buffer, "*. Volver");
 
                         tecla = teclado_getc();
                         if (tecla == '*') { // Regresar al menú principal
+                            strcpy(estado_actual, "menu");
+                            break;
+                        }
+                        __delay_ms(500); // Actualizar cada 500 ms
+                    }
+                    break;
+                }
+
+                case '4': { // Submenú de configuración
+                    strcpy(estado_actual, "config");
+                    actualiza_LCD("1.C.Temp  2.C.Hum", "3.C.Luz   #.Volver", "");
+                    while (1) {
+                        tecla = teclado_getc();
+                        if (tecla == '#') { // Volver al menú principal
                             strcpy(estado_actual, "menu");
                             break;
                         }
@@ -153,11 +169,16 @@ void configuro_adc_fc28(void) {
 }
 
 void actualiza_LCD(const char *linea1, const char *linea2, const char *linea3) {
-    BORRAR_LCD();
-    POS_CURSOR(1, 0);
-    ESCRIBE_MENSAJE(linea1, strlen(linea1));
-    POS_CURSOR(2, 0);
-    ESCRIBE_MENSAJE(linea2, strlen(linea2));
-    POS_CURSOR(3, 0);
-    ESCRIBE_MENSAJE(linea3, strlen(linea3));
+    if (strcmp(ultima_linea1, linea1) != 0 || strcmp(ultima_linea2, linea2) != 0 || strcmp(ultima_linea3, linea3) != 0) {
+        BORRAR_LCD();
+        POS_CURSOR(1, 0);
+        ESCRIBE_MENSAJE(linea1, strlen(linea1));
+        POS_CURSOR(2, 0);
+        ESCRIBE_MENSAJE(linea2, strlen(linea2));
+        POS_CURSOR(3, 0);
+        ESCRIBE_MENSAJE(linea3, strlen(linea3));
+        strncpy(ultima_linea1, linea1, sizeof(ultima_linea1));
+        strncpy(ultima_linea2, linea2, sizeof(ultima_linea2));
+        strncpy(ultima_linea3, linea3, sizeof(ultima_linea3));
+    }
 }
