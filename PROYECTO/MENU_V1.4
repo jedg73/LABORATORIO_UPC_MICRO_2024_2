@@ -83,7 +83,7 @@ void main(void) {
                         // Control de la bomba de agua
                         if (humedad < hum_min) {
                             LATCbits.LATC0 = 1; // Encender bomba de agua
-                        } else {
+                        } else if (humedad >= hum_ideal) {
                             LATCbits.LATC0 = 0; // Apagar bomba de agua
                         }
 
@@ -135,20 +135,24 @@ void main(void) {
                             while (1) {
                                 tecla = teclado_getc();
                                 if (tecla == '1') {
+                                    sprintf(buffer, "Actual: %.1fC", temp_ideal);
+                                    actualiza_LCD("Temp Ideal", buffer, "");
                                     int nueva_temp_ideal = capturar_numero("T Ideal (C):", "# Confirma");
                                     if (nueva_temp_ideal >= 0) {
                                         temp_ideal = nueva_temp_ideal;
-                                        sprintf(buffer, "Ideal: %.1fC", temp_ideal);
-                                        actualiza_LCD("Guardado!", buffer, "");
+                                        sprintf(buffer, "Guardado: %.1fC", temp_ideal);
+                                        actualiza_LCD("Ideal Actualizado", buffer, "");
                                         __delay_ms(1500);
                                     }
                                     break;
                                 } else if (tecla == '2') {
+                                    sprintf(buffer, "Actual: %.1fC", temp_max);
+                                    actualiza_LCD("Temp Maxima", buffer, "");
                                     int nueva_temp_max = capturar_numero("T Max (C):", "# Confirma");
                                     if (nueva_temp_max >= 0) {
                                         temp_max = nueva_temp_max;
-                                        sprintf(buffer, "Max: %.1fC", temp_max);
-                                        actualiza_LCD("Guardado!", buffer, "");
+                                        sprintf(buffer, "Guardado: %.1fC", temp_max);
+                                        actualiza_LCD("Max Actualizado", buffer, "");
                                         __delay_ms(1500);
                                     }
                                     break;
@@ -161,20 +165,24 @@ void main(void) {
                             while (1) {
                                 tecla = teclado_getc();
                                 if (tecla == '1') {
+                                    sprintf(buffer, "Actual: %d%%", hum_ideal);
+                                    actualiza_LCD("Humedad Ideal", buffer, "");
                                     int nueva_hum_ideal = capturar_numero("H Ideal (%):", "# Confirma");
                                     if (nueva_hum_ideal >= 0) {
                                         hum_ideal = nueva_hum_ideal;
-                                        sprintf(buffer, "Ideal: %d%%", hum_ideal);
-                                        actualiza_LCD("Guardado!", buffer, "");
+                                        sprintf(buffer, "Guardado: %d%%", hum_ideal);
+                                        actualiza_LCD("Ideal Actualizado", buffer, "");
                                         __delay_ms(1500);
                                     }
                                     break;
                                 } else if (tecla == '2') {
+                                    sprintf(buffer, "Actual: %d%%", hum_min);
+                                    actualiza_LCD("Humedad Minima", buffer, "");
                                     int nueva_hum_min = capturar_numero("H Min (%):", "# Confirma");
                                     if (nueva_hum_min >= 0) {
                                         hum_min = nueva_hum_min;
-                                        sprintf(buffer, "Min: %d%%", hum_min);
-                                        actualiza_LCD("Guardado!", buffer, "");
+                                        sprintf(buffer, "Guardado: %d%%", hum_min);
+                                        actualiza_LCD("Min Actualizado", buffer, "");
                                         __delay_ms(1500);
                                     }
                                     break;
