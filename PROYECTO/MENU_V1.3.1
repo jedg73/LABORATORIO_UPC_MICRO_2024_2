@@ -16,7 +16,6 @@ void configuro(void);
 void configuro_adc_lm35(void);
 void configuro_adc_ldr(void);
 void configuro_adc_fc28(void);
-void actualiza_LCD(const char *linea1, const char *linea2, const char *linea3);
 int capturar_numero(const char *mensaje, const char *unidad);
 
 // Variables globales
@@ -122,8 +121,13 @@ void main(void) {
 
                 case '4': { // Submenú de configuración
                     strcpy(estado_actual, "config");
+                    char subestado_actual[16] = ""; // Subestado para evitar parpadeo
                     while (1) {
-                        actualiza_LCD("1.Tempera 2.Humedad", "3.Luz   #.Volver", "");
+                        if (strcmp(subestado_actual, "config") != 0) {
+                            actualiza_LCD("1.Tempera 2.Humedad", "3.Luz   #.Volver", "");
+                            strcpy(subestado_actual, "config");
+                        }
+
                         tecla = teclado_getc();
 
                         if (tecla == '1') { // Configuración de temperatura
