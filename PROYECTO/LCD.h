@@ -31,5 +31,5 @@ void LCD_ESCRIBE_VAR_CHAR(unsigned char numero, unsigned char n_digitos);
 void LCD_ESCRIBE_VAR_INT(unsigned int numero, unsigned char n_digitos);
 void LCD_CHAR_GRADO(void);
 void LCD_VARCHAR_BITS(unsigned char dato);
-
+void actualiza_LCD(const char *linea1, const char *linea2, const char *linea3);
 #endif	/* XC_HEADER_TEMPLATE_H */
