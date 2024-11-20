@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 // Prototipos de funciones
+void configuro_adc_fc28(void);
 void FC28_init(void);
 uint16_t FC28_readADC(void);
 int FC28_getMoisturePercentage(uint16_t adc_val);
